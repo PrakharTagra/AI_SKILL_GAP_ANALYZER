@@ -1,13 +1,1789 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SkillGap AI</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillMap — AI Career Gap Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #0B0F1A;
+    --slate:   #131929;
+    --panel:   #1A2035;
+    --border:  #252D45;
+    --muted:   #3A4460;
+    --text-dim: #6B7A99;
+    --text:    #C4CFEA;
+    --white:   #E8EDF5;
+    --blue:    #3B7BF6;
+    --blue-dim: #1E3E8A;
+    --teal:    #1E9E8F;
+    --teal-dim: #0D4F48;
+    --amber:   #D97706;
+    --amber-dim: #6B3A03;
+    --red:     #E05252;
+    --red-dim: #5C1F1F;
+    --mono:    'JetBrains Mono', monospace;
+    --sans:    'Inter', sans-serif;
+    --display: 'Space Grotesk', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--navy);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: var(--slate);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 26px;
+    height: 26px;
+    background: var(--blue);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { width: 14px; height: 14px; }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: 4px;
+    padding: 2px 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--slate);
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 0 20px;
+    margin-bottom: 32px;
+  }
+
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .step-list { list-style: none; }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .step-item:hover { background: var(--panel); }
+  .step-item.active { background: var(--panel); }
+
+  .step-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--blue);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .step-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    background: var(--navy);
+    transition: all 0.2s;
+  }
+
+  .step-item.active .step-dot {
+    border-color: var(--blue);
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .step-item.done .step-dot {
+    border-color: var(--teal);
+    background: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  .step-meta { flex: 1; min-width: 0; }
+
+  .step-name {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .step-item.active .step-name { color: var(--white); }
+  .step-item.done .step-name { color: var(--text-dim); }
+
+  .step-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 0 20px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--teal));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Main Content ── */
+  .main {
+    overflow-y: auto;
+    padding: 36px 40px;
+    background: var(--navy);
+  }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Upload Panel ── */
+  .panel-header {
+    margin-bottom: 32px;
+  }
+
+  .panel-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+
+  .panel-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .upload-card {
+    background: var(--panel);
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .upload-card:hover {
+    border-color: var(--blue);
+    background: rgba(59, 123, 246, 0.04);
+  }
+
+  .upload-card.filled {
+    border-style: solid;
+    border-color: var(--teal);
+    background: rgba(30, 158, 143, 0.04);
+  }
+
+  .upload-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .upload-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+  }
+
+  .upload-icon svg { width: 18px; height: 18px; }
+
+  .upload-card-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .upload-card-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .upload-status {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--teal);
+    display: none;
+  }
+
+  .upload-card.filled .upload-status { display: block; }
+
+  .upload-card-check {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--teal);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-card.filled .upload-card-check { display: flex; }
+
+  input[type="file"] { display: none; }
+  input[type="text"], input[type="url"] {
+    width: 100%;
+    background: var(--navy);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    margin-top: 10px;
+  }
+
+  input[type="text"]:focus, input[type="url"]:focus {
+    border-color: var(--blue);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  .role-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .role-section-title {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 14px;
+  }
+
+  .role-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .role-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--navy);
+  }
+
+  .role-chip:hover { border-color: var(--blue); color: var(--blue); }
+  .role-chip.selected { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); }
+
+  .btn {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 11px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #2b6be0; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--text-dim); color: var(--white); }
+
+  .btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  /* ── Analysis Panel ── */
+  .analysis-shell {
+    max-width: 640px;
+  }
+
+  .agent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 28px 0;
+  }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .agent-row.running { border-color: var(--blue); }
+  .agent-row.done { border-color: var(--teal-dim); }
+  .agent-row.error { border-color: var(--red-dim); }
+
+  .agent-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .agent-icon svg { width: 15px; height: 15px; }
+
+  .agent-info { flex: 1; }
+
+  .agent-name {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .agent-detail {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .agent-row.running .agent-detail { color: var(--blue); }
+  .agent-row.done .agent-detail { color: var(--teal); }
+
+  .agent-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-waiting { color: var(--text-dim); background: var(--navy); border: 1px solid var(--border); }
+  .status-running { color: var(--blue); background: var(--blue-dim); border: 1px solid var(--blue); }
+  .status-done { color: var(--teal); background: var(--teal-dim); border: 1px solid var(--teal); }
+  .status-error { color: var(--red); background: var(--red-dim); border: 1px solid var(--red); }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .log-terminal {
+    background: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    height: 140px;
+    overflow-y: auto;
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+
+  .log-line { display: flex; gap: 12px; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-msg.info { color: var(--text); }
+  .log-msg.ok { color: var(--teal); }
+  .log-msg.run { color: var(--blue); }
+
+  /* ── Dashboard ── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.teal { color: var(--teal); }
+  .stat-value.amber { color: var(--amber); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 14px;
+    letter-spacing: -0.3px;
+  }
+
+  .skills-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .skill-block {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .skill-block-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+  }
+
+  .skill-block-title.green { color: var(--teal); }
+  .skill-block-title.amber { color: var(--amber); }
+
+  .skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    margin: 3px 3px 3px 0;
+  }
+
+  .skill-tag.have {
+    background: var(--teal-dim);
+    color: var(--teal);
+    border: 1px solid rgba(30,158,143,0.3);
+  }
+
+  .skill-tag.gap {
+    background: var(--amber-dim);
+    color: var(--amber);
+    border: 1px solid rgba(217,119,6,0.3);
+  }
+
+  .skill-bar-row {
+    margin-bottom: 12px;
+  }
+
+  .skill-bar-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+
+  .skill-bar-name { color: var(--text); }
+  .skill-bar-pct { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+  .skill-bar {
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .skill-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  .fill-teal { background: var(--teal); }
+  .fill-blue { background: var(--blue); }
+  .fill-amber { background: var(--amber); }
+
+  /* Roadmap */
+  .roadmap-wrap {
+    margin-bottom: 24px;
+  }
+
+  .roadmap-phase {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+  }
+
+  .phase-number {
+    font-family: var(--mono);
+    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .phase-1 { background: rgba(59,123,246,0.15); color: var(--blue); }
+  .phase-2 { background: rgba(30,158,143,0.15); color: var(--teal); }
+  .phase-3 { background: rgba(217,119,6,0.15); color: var(--amber); }
+
+  .phase-info { flex: 1; }
+
+  .phase-name {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .phase-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .phase-body {
+    padding: 0 20px 16px;
+    display: none;
+  }
+
+  .phase-body.open { display: block; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .task-item:last-child { border-bottom: none; }
+
+  .task-check {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .task-check:hover { border-color: var(--blue); }
+  .task-check.checked { background: var(--blue); border-color: var(--blue); }
+
+  .task-text { font-size: 13px; color: var(--text); }
+  .task-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  /* Constellation canvas */
+  .constellation-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #constellation-canvas {
+    width: 100%;
+    height: 280px;
+    display: block;
+  }
+
+  /* Timeline */
+  .timeline-strip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .timeline-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 16px;
+  }
+
+  .timeline-week {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+
+  .timeline-week::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    right: -50%;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .timeline-week:last-child::before { display: none; }
+
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .t-blue { background: var(--blue); }
+  .t-teal { background: var(--teal); }
+  .t-amber { background: var(--amber); }
+  .t-muted { background: var(--muted); border: 2px solid var(--border); }
+
+  .timeline-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .timeline-task {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Pulse animation */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .pulsing { animation: pulse 1.5s ease-in-out infinite; }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  /* Resource link */
+  .resource-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .resource-item:hover { border-color: var(--blue); }
+
+  .resource-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ri-blue { background: var(--blue-dim); }
+  .ri-teal { background: var(--teal-dim); }
+  .ri-amber { background: rgba(217,119,6,0.15); }
+
+  .resource-name {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .resource-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  .resource-arrow {
+    margin-left: auto;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="7" cy="7" r="2.5" fill="white"/>
+          <circle cx="2" cy="3" r="1.2" fill="white" opacity="0.5"/>
+          <circle cx="12" cy="4" r="1.2" fill="white" opacity="0.5"/>
+          <circle cx="11" cy="11" r="1.2" fill="white" opacity="0.5"/>
+          <circle cx="3" cy="11" r="1.2" fill="white" opacity="0.5"/>
+          <line x1="7" y1="7" x2="2" y2="3" stroke="white" stroke-width="0.7" opacity="0.3"/>
+          <line x1="7" y1="7" x2="12" y2="4" stroke="white" stroke-width="0.7" opacity="0.3"/>
+          <line x1="7" y1="7" x2="11" y2="11" stroke="white" stroke-width="0.7" opacity="0.3"/>
+          <line x1="7" y1="7" x2="3" y2="11" stroke="white" stroke-width="0.7" opacity="0.3"/>
+        </svg>
+      </div>
+      SkillMap
+    </div>
+    <div class="topbar-right">
+      <span class="badge">Beta</span>
+      <span style="font-size:12px;color:var(--text-dim)">AI Career Intelligence</span>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Workflow</div>
+      <ul class="step-list">
+        <li class="step-item active" data-step="0" onclick="goStep(0)">
+          <div class="step-dot">1</div>
+          <div class="step-meta">
+            <div class="step-name">Profile Setup</div>
+            <div class="step-sub">Resume, links, role</div>
+          </div>
+        </li>
+        <li class="step-item" data-step="1" onclick="goStep(1)">
+          <div class="step-dot">2</div>
+          <div class="step-meta">
+            <div class="step-name">AI Analysis</div>
+            <div class="step-sub">Multi-agent pipeline</div>
+          </div>
+        </li>
+        <li class="step-item" data-step="2" onclick="goStep(2)">
+          <div class="step-dot">3</div>
+          <div class="step-meta">
+            <div class="step-name">Skill Map</div>
+            <div class="step-sub">Visual gap overview</div>
+          </div>
+        </li>
+        <li class="step-item" data-step="3" onclick="goStep(3)">
+          <div class="step-dot">4</div>
+          <div class="step-meta">
+            <div class="step-name">Roadmap</div>
+            <div class="step-sub">Timetable & resources</div>
+          </div>
+        </li>
+        <li class="step-item" data-step="4" onclick="goStep(4)">
+          <div class="step-dot">5</div>
+          <div class="step-meta">
+            <div class="step-name">Dashboard</div>
+            <div class="step-sub">Full report</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="progress-bar-wrap">
+        <div class="progress-label">
+          <span>Overall progress</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Step 0: Profile Setup -->
+    <div class="panel active" id="panel-0">
+      <div class="panel-header">
+        <div class="panel-eyebrow">Step 1 of 5</div>
+        <h1 class="panel-title">Tell us about yourself</h1>
+        <p class="panel-desc">Upload your resume and connect your profiles. The more context you give, the sharper the gap analysis.</p>
+      </div>
+
+      <div class="upload-grid">
+        <!-- Resume -->
+        <div class="upload-card full-width" id="card-resume" onclick="document.getElementById('file-resume').click()">
+          <div class="upload-card-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 2H4a1 1 0 00-1 1v12a1 1 0 001 1h10a1 1 0 001-1V7l-5-5z" stroke="#3B7BF6" stroke-width="1.2" stroke-linejoin="round"/>
+              <path d="M10 2v5h5" stroke="#3B7BF6" stroke-width="1.2" stroke-linejoin="round"/>
+              <path d="M6 10h6M6 12.5h4" stroke="#3B7BF6" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="upload-card-title">Resume / CV</div>
+          <div class="upload-card-desc">Upload your PDF resume. The skill extractor will parse work experience, projects, and technologies.</div>
+          <div class="upload-status" id="resume-status">resume.pdf attached</div>
+          <input type="file" id="file-resume" accept=".pdf,.doc,.docx" onchange="markFilled('card-resume','resume-status',this)">
+        </div>
+
+        <!-- GitHub -->
+        <div class="upload-card" id="card-github">
+          <div class="upload-card-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 2C5.13 2 2 5.13 2 9c0 3.09 2.01 5.71 4.79 6.63.35.06.48-.15.48-.34v-1.17c-1.95.42-2.36-.94-2.36-.94-.32-.81-.78-1.03-.78-1.03-.64-.44.05-.43.05-.43.7.05 1.07.72 1.07.72.62 1.07 1.63.76 2.03.58.06-.45.24-.76.44-.93-1.56-.18-3.19-.78-3.19-3.47 0-.77.27-1.4.72-1.89-.07-.18-.31-.9.07-1.87 0 0 .59-.19 1.93.72a6.73 6.73 0 011.75-.24c.59 0 1.19.08 1.75.24 1.34-.91 1.93-.72 1.93-.72.38.97.14 1.69.07 1.87.45.49.72 1.12.72 1.89 0 2.7-1.64 3.29-3.2 3.47.25.22.48.65.48 1.31v1.94c0 .19.13.41.48.34C14.99 14.71 17 12.09 17 9c0-3.87-3.13-7-8-7z" fill="#6B7A99"/>
+            </svg>
+          </div>
+          <div class="upload-card-title">GitHub Profile</div>
+          <div class="upload-card-desc">Repos, commit history, and languages will be analyzed by the code profiler agent.</div>
+          <input type="url" placeholder="https://github.com/username" id="input-github" onchange="checkUrlFilled('card-github',this)" oninput="checkUrlFilled('card-github',this)">
+          <div class="upload-status" id="github-status">Profile linked</div>
+        </div>
+
+        <!-- LeetCode -->
+        <div class="upload-card" id="card-leetcode">
+          <div class="upload-card-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="12" height="12" rx="2" stroke="#D97706" stroke-width="1.2"/>
+              <path d="M6 9h6M9 6v6" stroke="#D97706" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="upload-card-title">LeetCode Profile</div>
+          <div class="upload-card-desc">Problem-solving stats, streaks, and difficulty distribution to map algorithmic depth.</div>
+          <input type="url" placeholder="https://leetcode.com/username" id="input-leetcode" onchange="checkUrlFilled('card-leetcode',this)" oninput="checkUrlFilled('card-leetcode',this)">
+          <div class="upload-status" id="leetcode-status">Profile linked</div>
+        </div>
+
+        <!-- LinkedIn -->
+        <div class="upload-card full-width" id="card-linkedin">
+          <div class="upload-card-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="14" height="14" rx="3" stroke="#3B7BF6" stroke-width="1.2"/>
+              <path d="M5 7.5v5M5 5.5v.5" stroke="#3B7BF6" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 12.5V10c0-1.1.9-2 2-2s2 .9 2 2v2.5" stroke="#3B7BF6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 7.5v5" stroke="#3B7BF6" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="upload-card-title">LinkedIn Profile</div>
+          <div class="upload-card-desc">Career trajectory, endorsements, and network signals help contextualize your seniority level.</div>
+          <input type="url" placeholder="https://linkedin.com/in/username" id="input-linkedin" onchange="checkUrlFilled('card-linkedin',this)" oninput="checkUrlFilled('card-linkedin',this)">
+          <div class="upload-status" id="linkedin-status">Profile linked</div>
+        </div>
+      </div>
+
+      <div class="role-section">
+        <div class="role-section-title">Target Role</div>
+        <input type="text" id="input-role" placeholder="e.g. Senior Frontend Engineer at a Series B startup">
+        <div class="role-chips" id="role-chips">
+          <div class="role-chip" onclick="setRole(this, 'Full-Stack Engineer')">Full-Stack Engineer</div>
+          <div class="role-chip" onclick="setRole(this, 'ML Engineer')">ML Engineer</div>
+          <div class="role-chip" onclick="setRole(this, 'DevOps / SRE')">DevOps / SRE</div>
+          <div class="role-chip" onclick="setRole(this, 'Frontend Engineer')">Frontend Engineer</div>
+          <div class="role-chip" onclick="setRole(this, 'Backend Engineer')">Backend Engineer</div>
+          <div class="role-chip" onclick="setRole(this, 'Data Engineer')">Data Engineer</div>
+          <div class="role-chip" onclick="setRole(this, 'iOS / Android')">iOS / Android</div>
+          <div class="role-chip" onclick="setRole(this, 'Security Engineer')">Security Engineer</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startAnalysis()">
+          Run Analysis
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 1: Analysis -->
+    <div class="panel" id="panel-1">
+      <div class="panel-header">
+        <div class="panel-eyebrow">Step 2 of 5</div>
+        <h1 class="panel-title">Running analysis</h1>
+        <p class="panel-desc">Five specialized agents are working in sequence to build your skill profile.</p>
+      </div>
+
+      <div class="analysis-shell">
+        <div class="agent-list" id="agent-list">
+          <div class="agent-row" id="agent-0">
+            <div class="agent-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4h11M2 7.5h7M2 11h5" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Resume Parser</div>
+              <div class="agent-detail" id="ad-0">Waiting to start...</div>
+            </div>
+            <span class="agent-status status-waiting" id="as-0">Queued</span>
+          </div>
+          <div class="agent-row" id="agent-1">
+            <div class="agent-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11.5l3.5-3.5L8 10.5l2.5-4L13 10" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">GitHub Profiler</div>
+              <div class="agent-detail" id="ad-1">Waiting to start...</div>
+            </div>
+            <span class="agent-status status-waiting" id="as-1">Queued</span>
+          </div>
+          <div class="agent-row" id="agent-2">
+            <div class="agent-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="#6B7A99" stroke-width="1.2"/><path d="M5 7.5h5M7.5 5v5" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Job Requirements Scraper</div>
+              <div class="agent-detail" id="ad-2">Waiting to start...</div>
+            </div>
+            <span class="agent-status status-waiting" id="as-2">Queued</span>
+          </div>
+          <div class="agent-row" id="agent-3">
+            <div class="agent-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v11M2 7.5h11" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/><path d="M4 4l7 7M11 4L4 11" stroke="#6B7A99" stroke-width="0.8" stroke-linecap="round" opacity="0.3"/></svg>
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Gap Detection Engine</div>
+              <div class="agent-detail" id="ad-3">Waiting to start...</div>
+            </div>
+            <span class="agent-status status-waiting" id="as-3">Queued</span>
+          </div>
+          <div class="agent-row" id="agent-4">
+            <div class="agent-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#6B7A99" stroke-width="1.2"/><rect x="9" y="2" width="4" height="4" rx="1" stroke="#6B7A99" stroke-width="1.2"/><rect x="2" y="9" width="4" height="4" rx="1" stroke="#6B7A99" stroke-width="1.2"/><rect x="9" y="9" width="4" height="4" rx="1" stroke="#6B7A99" stroke-width="1.2"/></svg>
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Roadmap Generator</div>
+              <div class="agent-detail" id="ad-4">Waiting to start...</div>
+            </div>
+            <span class="agent-status status-waiting" id="as-4">Queued</span>
+          </div>
+        </div>
+
+        <div class="log-terminal" id="log-terminal">
+          <div class="log-line"><span class="log-time">00:00</span><span class="log-msg info">Initializing SkillMap analysis engine...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Skill Map -->
+    <div class="panel" id="panel-2">
+      <div class="panel-header">
+        <div class="panel-eyebrow">Step 3 of 5</div>
+        <h1 class="panel-title">Your skill map</h1>
+        <p class="panel-desc">Skills you have are mapped against what the target role demands. Gaps are highlighted.</p>
+      </div>
+
+      <div class="dash-grid">
+        <div class="stat-card">
+          <div class="stat-label">Match Score</div>
+          <div class="stat-value blue">68%</div>
+          <div class="stat-sub">vs. Senior FE Engineer</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Skills Confirmed</div>
+          <div class="stat-value teal">14</div>
+          <div class="stat-sub">out of 22 required</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Critical Gaps</div>
+          <div class="stat-value amber">5</div>
+          <div class="stat-sub">need attention first</div>
+        </div>
+      </div>
+
+      <div class="constellation-wrap">
+        <div class="section-title">Skill Constellation</div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Each node is a skill. Blue = you have it. Amber = gap. Size reflects how often it appears in job listings.</p>
+        <canvas id="constellation-canvas"></canvas>
+      </div>
+
+      <div class="skills-row">
+        <div class="skill-block">
+          <div class="skill-block-title green">Confirmed skills</div>
+          <span class="skill-tag have">React</span>
+          <span class="skill-tag have">TypeScript</span>
+          <span class="skill-tag have">Node.js</span>
+          <span class="skill-tag have">REST APIs</span>
+          <span class="skill-tag have">Git</span>
+          <span class="skill-tag have">CSS / Tailwind</span>
+          <span class="skill-tag have">PostgreSQL</span>
+          <span class="skill-tag have">Jest</span>
+          <span class="skill-tag have">Webpack</span>
+          <span class="skill-tag have">CI/CD basics</span>
+          <span class="skill-tag have">Agile / Scrum</span>
+          <span class="skill-tag have">Figma handoff</span>
+          <span class="skill-tag have">Docker basics</span>
+          <span class="skill-tag have">GraphQL</span>
+        </div>
+        <div class="skill-block">
+          <div class="skill-block-title amber">Skill gaps</div>
+          <span class="skill-tag gap">System Design</span>
+          <span class="skill-tag gap">Redis / Caching</span>
+          <span class="skill-tag gap">Kubernetes</span>
+          <span class="skill-tag gap">Next.js App Router</span>
+          <span class="skill-tag gap">Web Performance</span>
+          <span class="skill-tag gap">Micro-frontends</span>
+          <span class="skill-tag gap">AWS (core)</span>
+          <span class="skill-tag gap">Team Leadership</span>
+        </div>
+      </div>
+
+      <div class="section-title">Proficiency breakdown</div>
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div class="skill-bar-row"><div class="skill-bar-header"><span class="skill-bar-name">React / Frontend</span><span class="skill-bar-pct">92%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-teal" style="width:92%"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-header"><span class="skill-bar-name">TypeScript</span><span class="skill-bar-pct">81%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-teal" style="width:81%"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-header"><span class="skill-bar-name">Backend / APIs</span><span class="skill-bar-pct">74%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-blue" style="width:74%"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-header"><span class="skill-bar-name">System Design</span><span class="skill-bar-pct">31%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-amber" style="width:31%"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-header"><span class="skill-bar-name">Cloud / Infra</span><span class="skill-bar-pct">28%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-amber" style="width:28%"></div></div></div>
+        <div class="skill-bar-row" style="margin-bottom:0"><div class="skill-bar-header"><span class="skill-bar-name">Team / Leadership</span><span class="skill-bar-pct">45%</span></div><div class="skill-bar"><div class="skill-bar-fill fill-amber" style="width:45%"></div></div></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(0)">Back</button>
+        <button class="btn btn-primary" onclick="goStep(3)">View Roadmap</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Roadmap -->
+    <div class="panel" id="panel-3">
+      <div class="panel-header">
+        <div class="panel-eyebrow">Step 4 of 5</div>
+        <h1 class="panel-title">Your learning roadmap</h1>
+        <p class="panel-desc">A structured 12-week plan to close the identified gaps, ordered by impact on your target role.</p>
+      </div>
+
+      <div class="timeline-strip">
+        <div class="section-title">12-Week Overview</div>
+        <div class="timeline-row">
+          <div class="timeline-week">
+            <div class="timeline-dot t-blue"></div>
+            <div class="timeline-label">Wk 1-2</div>
+            <div class="timeline-task">Next.js App Router</div>
+          </div>
+          <div class="timeline-week">
+            <div class="timeline-dot t-blue"></div>
+            <div class="timeline-label">Wk 3-4</div>
+            <div class="timeline-task">System Design I</div>
+          </div>
+          <div class="timeline-week">
+            <div class="timeline-dot t-blue"></div>
+            <div class="timeline-label">Wk 5-6</div>
+            <div class="timeline-task">Web Perf & Redis</div>
+          </div>
+          <div class="timeline-week">
+            <div class="timeline-dot t-teal"></div>
+            <div class="timeline-label">Wk 7-8</div>
+            <div class="timeline-task">AWS Core + K8s intro</div>
+          </div>
+          <div class="timeline-week">
+            <div class="timeline-dot t-teal"></div>
+            <div class="timeline-label">Wk 9-10</div>
+            <div class="timeline-task">System Design II</div>
+          </div>
+          <div class="timeline-week">
+            <div class="timeline-dot t-amber"></div>
+            <div class="timeline-label">Wk 11-12</div>
+            <div class="timeline-task">Mock interviews</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-wrap">
+        <div class="roadmap-phase" id="phase-0">
+          <div class="phase-header" onclick="togglePhase(0)">
+            <div class="phase-number phase-1">01</div>
+            <div class="phase-info">
+              <div class="phase-name">Foundation — Weeks 1 to 4</div>
+              <div class="phase-meta">Next.js App Router  +  System Design fundamentals  +  Redis basics</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--text-dim)"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="phase-body open" id="pb-0">
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Complete the official Next.js 14 App Router tutorial and rebuild one existing project using it</div><div class="task-time">5 hrs / week — Weeks 1-2</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Read "Designing Data-Intensive Applications" chapters 1-4, take notes on consistency models</div><div class="task-time">3 hrs / week — Weeks 1-4</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Implement a Redis-backed caching layer on an existing Node.js side project (LRU, TTL, invalidation)</div><div class="task-time">4 hrs — Week 3</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Do 2 system design mock questions per week on Pramp or with a study partner</div><div class="task-time">2 hrs / week — Weeks 3-4</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-phase" id="phase-1">
+          <div class="phase-header" onclick="togglePhase(1)">
+            <div class="phase-number phase-2">02</div>
+            <div class="phase-info">
+              <div class="phase-name">Depth — Weeks 5 to 8</div>
+              <div class="phase-meta">Web performance  +  AWS core services  +  Kubernetes intro</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--text-dim)"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="phase-body" id="pb-1">
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Achieve a 95+ Lighthouse score on a real project: lazy loading, code splitting, image optimization</div><div class="task-time">6 hrs — Week 5</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Complete AWS Solutions Architect Associate course (focus: EC2, S3, RDS, VPC, IAM, CloudFront)</div><div class="task-time">4 hrs / week — Weeks 6-7</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Deploy a containerized app to a local Kubernetes cluster using minikube; understand pods and services</div><div class="task-time">5 hrs — Week 8</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-phase" id="phase-2">
+          <div class="phase-header" onclick="togglePhase(2)">
+            <div class="phase-number phase-3">03</div>
+            <div class="phase-info">
+              <div class="phase-name">Interview Prep — Weeks 9 to 12</div>
+              <div class="phase-meta">Advanced system design  +  Behavioral prep  +  Mock interviews</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--text-dim)"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="phase-body" id="pb-2">
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Design 5 complex systems end-to-end: URL shortener, Twitter feed, Notion, Netflix CDN, Slack</div><div class="task-time">3 hrs / week — Weeks 9-10</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Prepare 8 STAR-format behavioral stories that cover leadership, conflict, ambiguity, and delivery</div><div class="task-time">3 hrs — Week 11</div></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleCheck(this)"></div>
+              <div><div class="task-text">Do 4 full mock interviews (2 coding, 2 system design) with feedback. Record and self-review.</div><div class="task-time">5 hrs — Week 12</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Recommended Resources</div>
+      <div class="resource-item">
+        <div class="resource-icon ri-blue">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2h10v10H2z" stroke="#3B7BF6" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 7h4M7 5v4" stroke="#3B7BF6" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="resource-name">Next.js Official Docs — App Router</div>
+          <div class="resource-tag">Free  ·  nextjs.org/docs</div>
+        </div>
+        <div class="resource-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="resource-item">
+        <div class="resource-icon ri-teal">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 11l4-4 2 2 4-6" stroke="#1E9E8F" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="resource-name">System Design Primer (GitHub)</div>
+          <div class="resource-tag">Free  ·  github.com/donnemartin/system-design-primer</div>
+        </div>
+        <div class="resource-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="resource-item">
+        <div class="resource-icon ri-amber">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#D97706" stroke-width="1.2"/><path d="M7 5v2.5l1.5 1.5" stroke="#D97706" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="resource-name">AWS Solutions Architect — Stephane Maarek</div>
+          <div class="resource-tag">Paid (~$15)  ·  Udemy</div>
+        </div>
+        <div class="resource-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="resource-item">
+        <div class="resource-icon ri-blue">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 10V4h6v6H4z" stroke="#3B7BF6" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 7h.01" stroke="#3B7BF6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="resource-name">Designing Data-Intensive Applications — Kleppmann</div>
+          <div class="resource-tag">Book  ·  O'Reilly</div>
+        </div>
+        <div class="resource-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#6B7A99" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">Back</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Full Dashboard</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Dashboard -->
+    <div class="panel" id="panel-4">
+      <div class="panel-header">
+        <div class="panel-eyebrow">Step 5 of 5</div>
+        <h1 class="panel-title">Full report</h1>
+        <p class="panel-desc">Everything in one place. Share this with a mentor or use it as your personal tracking board.</p>
+      </div>
+
+      <div class="dash-grid">
+        <div class="stat-card">
+          <div class="stat-label">Readiness</div>
+          <div class="stat-value blue">68%</div>
+          <div class="stat-sub">Senior FE Engineer</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time to ready</div>
+          <div class="stat-value teal">12w</div>
+          <div class="stat-sub">Estimated at 10 hrs/week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">LeetCode rank</div>
+          <div class="stat-value amber">Top 18%</div>
+          <div class="stat-sub">234 solved, 34 hard</div>
+        </div>
+      </div>
+
+      <div class="section-title">Agent findings</div>
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--teal);margin-bottom:10px;">Resume Agent</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.7;">Strong project descriptions with measurable impact. Detected 3.5 years of effective frontend experience. Communication score rated high based on clarity of language.</p>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--blue);margin-bottom:10px;">GitHub Agent</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.7;">14 public repos, mostly TypeScript and JS. Consistent commits over 18 months. Missing evidence of infra-as-code or large-scale system contributions. Test coverage is moderate.</p>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:10px;">Job Market Agent</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.7;">Analyzed 42 live postings for Senior FE Engineer. System design, Next.js App Router, and cloud (AWS or GCP) appear in 78% of listings. Redis in 54%. K8s in 41%.</p>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:10px;">Gap Agent</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.7;">5 critical gaps mapped to your 3 highest-frequency skill clusters. None are deep knowledge gaps — all are learnable in 4-12 weeks with focused effort.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Weekly commitment tracker</div>
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:10px;">
+          <!-- mock heatmap cells -->
+          <div id="hcells"></div>
+        </div>
+        <p style="font-size:11px;color:var(--text-dim);margin-top:8px;">Track your hours here each week. Darker = more time invested.</p>
+        <div id="heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:12px;"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(3)">Back</button>
+        <button class="btn btn-primary" onclick="alert('Export coming in the agentic build!')">Export PDF</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── State ──
+let currentStep = 0;
+const STEPS = 5;
+
+// ── Navigation ──
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === n));
+  document.querySelectorAll('.step-item').forEach((s, i) => {
+    s.classList.toggle('active', i === n);
+    s.classList.toggle('done', i < n);
+  });
+  currentStep = n;
+  const pct = Math.round((n / (STEPS - 1)) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+
+  if (n === 2) drawConstellation();
+  if (n === 4) drawHeatmap();
+}
+
+// ── Upload helpers ──
+function markFilled(cardId, statusId, input) {
+  const card = document.getElementById(cardId);
+  const status = document.getElementById(statusId);
+  if (input.files && input.files[0]) {
+    card.classList.add('filled');
+    status.textContent = input.files[0].name + ' attached';
+  }
+}
+
+function checkUrlFilled(cardId, input) {
+  const card = document.getElementById(cardId);
+  const statusId = cardId.replace('card-', '') + '-status';
+  const status = document.getElementById(statusId);
+  if (input.value.startsWith('http')) {
+    card.classList.add('filled');
+    if (status) status.style.display = 'block';
+  } else {
+    card.classList.remove('filled');
+  }
+}
+
+function setRole(el, value) {
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('input-role').value = value;
+}
+
+// ── Analysis simulation ──
+let logTime = 0;
+
+function log(msg, type='info') {
+  const t = document.getElementById('log-terminal');
+  const secs = String(logTime).padStart(2, '0');
+  t.innerHTML += `<div class="log-line"><span class="log-time">00:${secs}</span><span class="log-msg ${type}">${msg}</span></div>`;
+  t.scrollTop = t.scrollHeight;
+  logTime += Math.floor(Math.random() * 4) + 1;
+}
+
+function setAgent(i, state, detail) {
+  const row = document.getElementById(`agent-${i}`);
+  const statusEl = document.getElementById(`as-${i}`);
+  const detailEl = document.getElementById(`ad-${i}`);
+  row.className = `agent-row ${state}`;
+  detailEl.textContent = detail;
+  const labels = { waiting: 'Queued', running: 'Running', done: 'Done', error: 'Error' };
+  const cls = { waiting: 'status-waiting', running: 'status-running', done: 'status-done', error: 'status-error' };
+  statusEl.className = `agent-status ${cls[state]}`;
+  statusEl.innerHTML = state === 'running'
+    ? '<div class="spinner"></div>'
+    : labels[state];
+}
+
+const agentSteps = [
+  ['Parsing resume PDF...', 'Extracting skills, years, stack...', 'Resume parsed — 14 skills detected'],
+  ['Fetching GitHub repos...', 'Analyzing commit history, languages...', 'GitHub analysis complete — 14 repos'],
+  ['Scraping 42 job postings...', 'Building skill frequency table...', 'Job requirements mapped — 22 skills'],
+  ['Comparing skill sets...', 'Running gap scoring algorithm...', 'Gap analysis done — 5 critical gaps'],
+  ['Building 12-week roadmap...', 'Curating resources per gap...', 'Roadmap generated — 3 phases, 10 tasks'],
+];
+
+function startAnalysis() {
+  goStep(1);
+  logTime = 0;
+  log('Session started. Agents queued.', 'info');
+
+  let delay = 400;
+  agentSteps.forEach((msgs, i) => {
+    setTimeout(() => {
+      setAgent(i, 'running', msgs[0]);
+      log(`[Agent ${i+1}] ${msgs[0]}`, 'run');
+    }, delay);
+    delay += 700;
+    setTimeout(() => {
+      log(`[Agent ${i+1}] ${msgs[1]}`, 'info');
+    }, delay);
+    delay += 700;
+    setTimeout(() => {
+      setAgent(i, 'done', msgs[2]);
+      log(`[Agent ${i+1}] ${msgs[2]}`, 'ok');
+    }, delay);
+    delay += 400;
+  });
+
+  setTimeout(() => {
+    log('All agents complete. Building report...', 'ok');
+    setTimeout(() => goStep(2), 600);
+  }, delay + 400);
+}
+
+// ── Constellation canvas ──
+function drawConstellation() {
+  const canvas = document.getElementById('constellation-canvas');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const skills = [
+    { name:'React', x:0.5, y:0.4, r:18, have:true },
+    { name:'TypeScript', x:0.35, y:0.3, r:15, have:true },
+    { name:'Node.js', x:0.62, y:0.28, r:14, have:true },
+    { name:'CSS/Tailwind', x:0.28, y:0.5, r:12, have:true },
+    { name:'GraphQL', x:0.72, y:0.48, r:12, have:true },
+    { name:'PostgreSQL', x:0.42, y:0.6, r:11, have:true },
+    { name:'Jest', x:0.6, y:0.62, r:10, have:true },
+    { name:'Git', x:0.2, y:0.38, r:10, have:true },
+    { name:'Docker', x:0.78, y:0.35, r:10, have:true },
+    { name:'CI/CD', x:0.55, y:0.75, r:9, have:true },
+    { name:'Webpack', x:0.32, y:0.7, r:9, have:true },
+    { name:'REST APIs', x:0.72, y:0.65, r:11, have:true },
+    { name:'Agile', x:0.18, y:0.62, r:8, have:true },
+    { name:'Figma', x:0.25, y:0.2, r:8, have:true },
+    { name:'System Design', x:0.5, y:0.18, r:19, have:false },
+    { name:'Redis', x:0.82, y:0.55, r:14, have:false },
+    { name:'Kubernetes', x:0.82, y:0.2, r:13, have:false },
+    { name:'Next.js AR', x:0.15, y:0.78, r:15, have:false },
+    { name:'Web Perf', x:0.68, y:0.8, r:12, have:false },
+    { name:'AWS', x:0.08, y:0.5, r:16, have:false },
+    { name:'Microfronts', x:0.42, y:0.85, r:10, have:false },
+    { name:'Leadership', x:0.12, y:0.22, r:11, have:false },
+  ];
+
+  const cx = (n) => n.x * W;
+  const cy = (n) => n.y * H;
+
+  // Draw edges between nearby skills
+  ctx.lineWidth = 0.7;
+  skills.forEach((a, i) => {
+    skills.forEach((b, j) => {
+      if (j <= i) return;
+      const dist = Math.hypot(cx(a)-cx(b), cy(a)-cy(b));
+      if (dist < 120) {
+        ctx.beginPath();
+        ctx.moveTo(cx(a), cy(a));
+        ctx.lineTo(cx(b), cy(b));
+        ctx.strokeStyle = `rgba(58,68,96,${0.8 - dist/150})`;
+        ctx.stroke();
+      }
+    });
+  });
+
+  // Draw nodes
+  skills.forEach(s => {
+    const x = cx(s), y = cy(s), r = s.r;
+    const color = s.have ? '#1E9E8F' : '#D97706';
+    const dimColor = s.have ? 'rgba(30,158,143,0.15)' : 'rgba(217,119,6,0.15)';
+
+    // Glow
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
+    grad.addColorStop(0, s.have ? 'rgba(30,158,143,0.2)' : 'rgba(217,119,6,0.2)');
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(x, y, r * 2, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = dimColor;
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.font = `500 ${Math.max(9, r * 0.55)}px Inter, sans-serif`;
+    ctx.fillStyle = s.have ? '#1E9E8F' : '#D97706';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (s.name.length > 8) {
+      ctx.font = `500 ${Math.max(8, r * 0.48)}px Inter, sans-serif`;
+    }
+    ctx.fillText(s.name, x, y);
+  });
+}
+
+// ── Phase toggle ──
+function togglePhase(i) {
+  const body = document.getElementById(`pb-${i}`);
+  body.classList.toggle('open');
+}
+
+// ── Task checkbox ──
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  if (el.classList.contains('checked')) {
+    el.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    el.closest('.task-item').querySelector('.task-text').style.textDecoration = 'line-through';
+    el.closest('.task-item').querySelector('.task-text').style.color = 'var(--text-dim)';
+  } else {
+    el.innerHTML = '';
+    el.closest('.task-item').querySelector('.task-text').style.textDecoration = '';
+    el.closest('.task-item').querySelector('.task-text').style.color = 'var(--text)';
+  }
+}
+
+// ── Heatmap ──
+function drawHeatmap() {
+  const wrap = document.getElementById('heatmap');
+  wrap.innerHTML = '';
+  const weeks = 12;
+  const values = [0,2,4,3,5,8,6,7,9,8,10,7];
+  const max = 10;
+  for (let i = 0; i < weeks; i++) {
+    const v = values[i];
+    const alpha = 0.1 + (v / max) * 0.9;
+    const cell = document.createElement('div');
+    cell.style.cssText = `
+      height: 32px;
+      border-radius: 5px;
+      background: rgba(59,123,246,${alpha});
+      border: 1px solid rgba(59,123,246,${alpha * 0.5});
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: rgba(255,255,255,${0.3 + alpha * 0.7});
+      cursor: pointer;
+      transition: transform 0.1s;
+    `;
+    cell.textContent = v + 'h';
+    cell.title = `Week ${i+1}: ${v} hours`;
+    cell.onmouseenter = () => cell.style.transform = 'scale(1.08)';
+    cell.onmouseleave = () => cell.style.transform = '';
+    wrap.appendChild(cell);
+  }
+}
+
+// ── Init ──
+window.addEventListener('resize', () => {
+  if (currentStep === 2) drawConstellation();
+});
+</script>
+</body>
 </html>
