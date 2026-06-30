@@ -32,19 +32,35 @@ export default function ProfileWizard({
 
   const up = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleResume = () => {
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      up("resumeName", "Resume_ArjunSharma_2024.pdf");
-      if (!form.name)    up("name",    "Arjun Sharma");
-      if (!form.college) up("college", "IIT Delhi");
-      if (!form.degree)  up("degree",  "B.Tech Computer Science");
-      if (!form.year)    up("year",    "3rd Year");
-      if (!form.cgpa)    up("cgpa",    "8.7");
-      if (!form.skills)  up("skills",  "Python, JavaScript, React, Machine Learning, SQL, Docker");
-    }, 1800);
-  };
+ const handleResume = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  setUploading(true);
+
+  const formData = new FormData();
+  formData.append("resume", file);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/resume", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+
+    const data = await res.json();
+    // data.text is the raw extracted resume text for now
+    console.log("Extracted text:", data.text);
+
+    up("resumeName", file.name);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to process resume. Check the backend console.");
+  } finally {
+    setUploading(false);
+  }
+};
 
   const submit = () => {
     setSaving(true);
