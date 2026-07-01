@@ -2,9 +2,9 @@ const axios = require("axios");
 
 async function extractSkillsFromText(resumeText) {
   const response = await axios.post(
-    "https://api.x.ai/v1/chat/completions",
+    "https://api.groq.com/openai/v1/chat/completions",
     {
-      model: "grok-3",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
@@ -29,7 +29,7 @@ ${resumeText}`,
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
     }
