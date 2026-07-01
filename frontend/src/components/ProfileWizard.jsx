@@ -33,35 +33,34 @@ export default function ProfileWizard({
   const up = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
  const handleResume = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  setUploading(true);
-
-  const formData = new FormData();
-  formData.append("resume", file);
-
-  try {
-    const res = await fetch("http://localhost:5000/api/resume", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) throw new Error("Upload failed");
-
-    const data = await res.json();
-    // data.text is the raw extracted resume text for now
-    console.log("Extracted text:", data.text);
-
-    up("resumeName", file.name);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to process resume. Check the backend console.");
-  } finally {
-    setUploading(false);
-  }
-};
-
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("resume", file);
+    try {
+      const res = await fetch("http://localhost:5000/api/resume", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      up("resumeName", file.name);
+      if (data.name)    up("name", data.name);
+      if (data.college) up("college", data.college);
+      if (data.degree)  up("degree", data.degree);
+      if (data.year)    up("year", data.year);
+      if (data.cgpa)    up("cgpa", data.cgpa);
+      if (data.skills)  up("skills", Array.isArray(data.skills)
+        ? data.skills.join(", ")
+        : data.skills);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to process resume. Check the backend console.");
+    } finally {
+      setUploading(false);
+    }
+  };
   const submit = () => {
     setSaving(true);
     setTimeout(() => {
