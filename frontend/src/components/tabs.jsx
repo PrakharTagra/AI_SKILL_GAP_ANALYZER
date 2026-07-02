@@ -1,7 +1,14 @@
 import { Ring, MiniBar, MetricCard } from "./ui.jsx";
 import { SKILLS_DATA, SKILL_COLORS } from "../data/mockData.js";
 
-export function OverviewTab({ profile, onTabChange }) {
+export function OverviewTab({ profile, onTabChange, leetcodeStats, leetcodeError }) {
+  const problemsSolved = leetcodeStats ? leetcodeStats.totalSolved : "—";
+  const leetcodeRank = leetcodeStats?.ranking
+    ? leetcodeStats.ranking >= 1000
+      ? `#${Math.round(leetcodeStats.ranking / 1000)}K`
+      : `#${leetcodeStats.ranking}`
+    : "—";
+
   return (
     <div className="fadein">
       <div style={{ marginBottom: 24 }}>
@@ -22,9 +29,11 @@ export function OverviewTab({ profile, onTabChange }) {
         }}
       >
         {[
-          { label: "Problems Solved", val: "260", icon: "💡", color: "var(--indigo)" },
+          // Real, from your LeetCode GraphQL route
+          { label: "Problems Solved", val: problemsSolved, icon: "💡", color: "var(--indigo)" },
+          { label: "LeetCode Rank",   val: leetcodeRank,   icon: "🏅", color: "var(--amber)" },
+          // Still mock — no GitHub/skill-scoring backend yet
           { label: "GitHub Commits",  val: "847", icon: "🐙", color: "var(--cyan)" },
-          { label: "LeetCode Rank",   val: "#45K", icon: "🏅", color: "var(--amber)" },
           { label: "Skill Score",     val: "59%", icon: "📈", color: "var(--green)" },
         ].map((m) => (
           <MetricCard key={m.label} {...m} />
@@ -149,14 +158,63 @@ export function OverviewTab({ profile, onTabChange }) {
   );
 }
 
-export function LeetCodeTab({ profile }) {
+export function LeetCodeTab({ profile, stats, error }) {
+  if (!profile.leetcode) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          💻 LeetCode Stats
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px" }}>
+          No LeetCode profile linked yet. Add one from your profile settings to see stats here.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          💻 LeetCode Stats
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 16 }}>
+          {profile.leetcode}
+        </p>
+        <div
+          style={{
+            padding: "12px",
+            background: "rgba(239,68,68,.08)",
+            borderRadius: 8,
+            border: "1px solid rgba(239,68,68,.2)",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "var(--red)" }}>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="fadein">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const { totalSolved, easySolved, mediumSolved, hardSolved, ranking, recentSubmissions } = stats;
+  // Approximate caps of LeetCode's overall question bank per difficulty, so bars
+  // read as "progress toward everything available" rather than an arbitrary number.
+  const CAPS = { easy: 850, medium: 1800, hard: 800 };
+
   return (
     <div className="fadein">
       <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
         💻 LeetCode Stats
       </h1>
       <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 24 }}>
-        {profile.leetcode || "leetcode.com/user"}
+        {profile.leetcode}
       </p>
 
       <div
@@ -168,10 +226,10 @@ export function LeetCodeTab({ profile }) {
         }}
       >
         {[
-          { label: "Total Solved", val: SKILLS_DATA.leetcode.totalSolved, color: "var(--indigo)" },
-          { label: "Easy",         val: SKILLS_DATA.leetcode.easy,        color: "var(--green)" },
-          { label: "Medium",       val: SKILLS_DATA.leetcode.medium,      color: "var(--amber)" },
-          { label: "Hard",         val: SKILLS_DATA.leetcode.hard,        color: "var(--red)" },
+          { label: "Total Solved", val: totalSolved,  color: "var(--indigo)" },
+          { label: "Easy",         val: easySolved,   color: "var(--green)" },
+          { label: "Medium",       val: mediumSolved, color: "var(--amber)" },
+          { label: "Hard",         val: hardSolved,   color: "var(--red)" },
         ].map((m) => (
           <div key={m.label} className="metric-card">
             <div style={{ fontSize: "26px", fontWeight: 700, color: m.color }}>{m.val}</div>
@@ -186,9 +244,9 @@ export function LeetCodeTab({ profile }) {
             Problem Distribution
           </h3>
           {[
-            { label: "Easy",   val: 87,  max: 150, color: "var(--green)" },
-            { label: "Medium", val: 142, max: 300, color: "var(--amber)" },
-            { label: "Hard",   val: 31,  max: 100, color: "var(--red)" },
+            { label: "Easy",   val: easySolved,   max: CAPS.easy,   color: "var(--green)" },
+            { label: "Medium", val: mediumSolved,  max: CAPS.medium, color: "var(--amber)" },
+            { label: "Hard",   val: hardSolved,    max: CAPS.hard,   color: "var(--red)" },
           ].map((d) => (
             <div key={d.label} style={{ marginBottom: 14 }}>
               <div
@@ -208,46 +266,58 @@ export function LeetCodeTab({ profile }) {
           <div style={{ marginTop: 16, padding: "10px", background: "var(--slate)", borderRadius: 8 }}>
             <div style={{ fontSize: "12px", color: "var(--text3)" }}>Global Rank</div>
             <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--indigo)", marginTop: 2 }}>
-              #{SKILLS_DATA.leetcode.rank.toLocaleString()}
+              {ranking ? `#${ranking.toLocaleString()}` : "Unranked"}
             </div>
           </div>
         </div>
 
         <div className="card" style={{ borderColor: "var(--border2)" }}>
-          <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: 16 }}>Consistency</h3>
+          <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: 16 }}>
+            Progress to 500
+          </h3>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
             <Ring
-              percent={Math.round((SKILLS_DATA.leetcode.totalSolved / 500) * 100)}
+              percent={Math.min(100, Math.round((totalSolved / 500) * 100))}
               color="var(--indigo)"
               size={72}
             />
             <div>
               <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--indigo)" }}>
-                {SKILLS_DATA.leetcode.totalSolved}
+                {totalSolved}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text3)" }}>of 500 target</div>
             </div>
           </div>
-          <div style={{ padding: "12px", background: "var(--slate)", borderRadius: 8, marginBottom: 10 }}>
-            <div style={{ fontSize: "12px", color: "var(--text3)" }}>Current Streak</div>
-            <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--amber)", marginTop: 2 }}>
-              {SKILLS_DATA.leetcode.streak} 🔥 days
+
+          <div style={{ padding: "12px", background: "var(--slate)", borderRadius: 8 }}>
+            <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: 8 }}>
+              Recent Submissions
             </div>
-          </div>
-          <div
-            style={{
-              padding: "12px",
-              background: "rgba(239,68,68,.08)",
-              borderRadius: 8,
-              border: "1px solid rgba(239,68,68,.2)",
-            }}
-          >
-            <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: 4 }}>
-              Weakness detected
-            </div>
-            <div style={{ fontSize: "13px", color: "var(--red)" }}>
-              Dynamic Programming — only 4 Hard solved
-            </div>
+            {recentSubmissions?.length ? (
+              recentSubmissions.slice(0, 4).map((s) => (
+                <div
+                  key={`${s.titleSlug}-${s.timestamp}`}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    padding: "6px 0",
+                    borderTop: "1px solid var(--border)",
+                  }}
+                >
+                  <span style={{ color: "var(--text2)" }}>{s.title}</span>
+                  <span
+                    style={{
+                      color: s.statusDisplay === "Accepted" ? "var(--green)" : "var(--red)",
+                    }}
+                  >
+                    {s.statusDisplay}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: "12px", color: "var(--text3)" }}>No recent activity found</div>
+            )}
           </div>
         </div>
       </div>

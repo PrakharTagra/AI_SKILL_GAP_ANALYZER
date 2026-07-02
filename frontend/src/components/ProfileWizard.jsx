@@ -51,6 +51,9 @@ export default function ProfileWizard({
       if (data.degree)  up("degree", data.degree);
       if (data.year)    up("year", data.year);
       if (data.cgpa)    up("cgpa", data.cgpa);
+      if(data.leetcode) up("leetcode", data.leetcode);
+      if(data.github) up("github", data.github);
+      if(data.linkedin) up("linkedin", data.linkedin);
       if (data.skills)  up("skills", Array.isArray(data.skills)
         ? data.skills.join(", ")
         : data.skills);

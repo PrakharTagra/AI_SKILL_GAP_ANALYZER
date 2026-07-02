@@ -15,14 +15,43 @@ const NAV = [
   { id: "gaps",     label: "Skill Gaps",  icon: "🎯" },
 ];
 
+const API_BASE = "http://localhost:5000";
+
 export default function Dashboard({ profile, onEditProfile, onLogout }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [analyzing, setAnalyzing] = useState(true);
 
+  const [leetcodeStats, setLeetcodeStats] = useState(null);
+  const [leetcodeError, setLeetcodeError] = useState(null);
+
   useEffect(() => {
-    const t = setTimeout(() => setAnalyzing(false), 1800);
-    return () => clearTimeout(t);
-  }, []);
+    let cancelled = false;
+
+    async function loadProfiles() {
+      if (profile.leetcode) {
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/leetcode/stats?profile=${encodeURIComponent(profile.leetcode)}`
+          );
+          if (!res.ok) throw new Error("Failed to fetch LeetCode stats");
+          const data = await res.json();
+          if (!cancelled) setLeetcodeStats(data);
+        } catch (err) {
+          console.error(err);
+          if (!cancelled) setLeetcodeError(err.message);
+        }
+      }
+      // GitHub / LinkedIn fetches slot in here once those services/routes exist —
+      // Promise.all([...]) them alongside the LeetCode call above.
+
+      if (!cancelled) setAnalyzing(false);
+    }
+
+    loadProfiles();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.leetcode]);
 
   if (analyzing) {
     return (
@@ -206,11 +235,24 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
           maxHeight: "100vh",
         }}
       >
-        {activeTab === "overview"  && <OverviewTab  profile={profile} onTabChange={setActiveTab} />}
-        {activeTab === "leetcode"  && <LeetCodeTab  profile={profile} />}
-        {activeTab === "github"    && <GitHubTab    profile={profile} />}
-        {activeTab === "linkedin"  && <LinkedInTab  profile={profile} />}
-        {activeTab === "gaps"      && <SkillGapsTab profile={profile} />}
+        {activeTab === "overview" && (
+          <OverviewTab
+            profile={profile}
+            onTabChange={setActiveTab}
+            leetcodeStats={leetcodeStats}
+            leetcodeError={leetcodeError}
+          />
+        )}
+        {activeTab === "leetcode" && (
+          <LeetCodeTab
+            profile={profile}
+            stats={leetcodeStats}
+            error={leetcodeError}
+          />
+        )}
+        {activeTab === "github"   && <GitHubTab    profile={profile} />}
+        {activeTab === "linkedin" && <LinkedInTab  profile={profile} />}
+        {activeTab === "gaps"     && <SkillGapsTab profile={profile} />}
       </div>
     </div>
   );
