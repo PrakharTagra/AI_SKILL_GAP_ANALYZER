@@ -23,27 +23,53 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
 
   const [leetcodeStats, setLeetcodeStats] = useState(null);
   const [leetcodeError, setLeetcodeError] = useState(null);
+  const [githubStats, setGithubStats] = useState(null);
+  const [githubError, setGithubError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadProfiles() {
-      if (profile.leetcode) {
-        try {
-          const res = await fetch(
-            `${API_BASE}/api/leetcode/stats?profile=${encodeURIComponent(profile.leetcode)}`
-          );
-          if (!res.ok) throw new Error("Failed to fetch LeetCode stats");
-          const data = await res.json();
-          if (!cancelled) setLeetcodeStats(data);
-        } catch (err) {
-          console.error(err);
-          if (!cancelled) setLeetcodeError(err.message);
-        }
-      }
-      // GitHub / LinkedIn fetches slot in here once those services/routes exist —
-      // Promise.all([...]) them alongside the LeetCode call above.
+      const tasks = [];
 
+      if (profile.leetcode) {
+        tasks.push(
+          fetch(`${API_BASE}/api/leetcode/stats?profile=${encodeURIComponent(profile.leetcode)}`)
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch LeetCode stats");
+              return res.json();
+            })
+            .then((data) => {
+              if (!cancelled) setLeetcodeStats(data);
+            })
+            .catch((err) => {
+              console.error(err);
+              if (!cancelled) setLeetcodeError(err.message);
+            })
+        );
+      }
+
+      if (profile.github) {
+        tasks.push(
+          fetch(`${API_BASE}/api/github/stats?profile=${encodeURIComponent(profile.github)}`)
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch GitHub stats");
+              return res.json();
+            })
+            .then((data) => {
+              if (!cancelled) setGithubStats(data);
+            })
+            .catch((err) => {
+              console.error(err);
+              if (!cancelled) setGithubError(err.message);
+            })
+        );
+      }
+
+      // LinkedIn fetch slots in here once that service/route exists —
+      // push another task into the array above, same pattern.
+
+      await Promise.all(tasks);
       if (!cancelled) setAnalyzing(false);
     }
 
@@ -51,7 +77,7 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [profile.leetcode]);
+  }, [profile.leetcode, profile.github]);
 
   if (analyzing) {
     return (
@@ -241,6 +267,8 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
             onTabChange={setActiveTab}
             leetcodeStats={leetcodeStats}
             leetcodeError={leetcodeError}
+            githubStats={githubStats}
+            githubError={githubError}
           />
         )}
         {activeTab === "leetcode" && (
@@ -250,7 +278,13 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
             error={leetcodeError}
           />
         )}
-        {activeTab === "github"   && <GitHubTab    profile={profile} />}
+        {activeTab === "github" && (
+          <GitHubTab
+            profile={profile}
+            stats={githubStats}
+            error={githubError}
+          />
+        )}
         {activeTab === "linkedin" && <LinkedInTab  profile={profile} />}
         {activeTab === "gaps"     && <SkillGapsTab profile={profile} />}
       </div>

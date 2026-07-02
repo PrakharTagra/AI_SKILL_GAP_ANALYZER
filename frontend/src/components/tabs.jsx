@@ -1,13 +1,14 @@
 import { Ring, MiniBar, MetricCard } from "./ui.jsx";
 import { SKILLS_DATA, SKILL_COLORS } from "../data/mockData.js";
 
-export function OverviewTab({ profile, onTabChange, leetcodeStats, leetcodeError }) {
+export function OverviewTab({ profile, onTabChange, leetcodeStats, leetcodeError, githubStats, githubError }) {
   const problemsSolved = leetcodeStats ? leetcodeStats.totalSolved : "—";
   const leetcodeRank = leetcodeStats?.ranking
     ? leetcodeStats.ranking >= 1000
       ? `#${Math.round(leetcodeStats.ranking / 1000)}K`
       : `#${leetcodeStats.ranking}`
     : "—";
+  const githubCommits = githubStats ? githubStats.totalCommits : "—";
 
   return (
     <div className="fadein">
@@ -29,11 +30,11 @@ export function OverviewTab({ profile, onTabChange, leetcodeStats, leetcodeError
         }}
       >
         {[
-          // Real, from your LeetCode GraphQL route
+          // Real, from your LeetCode and GitHub routes
           { label: "Problems Solved", val: problemsSolved, icon: "💡", color: "var(--indigo)" },
           { label: "LeetCode Rank",   val: leetcodeRank,   icon: "🏅", color: "var(--amber)" },
-          // Still mock — no GitHub/skill-scoring backend yet
-          { label: "GitHub Commits",  val: "847", icon: "🐙", color: "var(--cyan)" },
+          { label: "GitHub Commits",  val: githubCommits,  icon: "🐙", color: "var(--cyan)" },
+          // Still mock — no skill-scoring backend yet
           { label: "Skill Score",     val: "59%", icon: "📈", color: "var(--green)" },
         ].map((m) => (
           <MetricCard key={m.label} {...m} />
@@ -325,14 +326,67 @@ export function LeetCodeTab({ profile, stats, error }) {
   );
 }
 
-export function GitHubTab({ profile }) {
+export function GitHubTab({ profile, stats, error }) {
+  if (!profile.github) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          🐙 GitHub Activity
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px" }}>
+          No GitHub profile linked yet. Add one from your profile settings to see stats here.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          🐙 GitHub Activity
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 16 }}>
+          {profile.github}
+        </p>
+        <div
+          style={{
+            padding: "12px",
+            background: "rgba(239,68,68,.08)",
+            borderRadius: 8,
+            border: "1px solid rgba(239,68,68,.2)",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "var(--red)" }}>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="fadein">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const { ownRepoCount, collaboratedRepoCount, totalCommits, contributionsLastYear, topRepos, languageCounts } = stats;
+
+  const totalLangCount = Object.values(languageCounts).reduce((a, b) => a + b, 0) || 1;
+  const languagePcts = Object.entries(languageCounts)
+    .map(([lang, count]) => ({ lang, pct: Math.round((count / totalLangCount) * 100) }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 4);
+  const LANG_COLORS = ["var(--indigo)", "var(--amber)", "var(--cyan)", "var(--green)"];
+
   return (
     <div className="fadein">
       <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
         🐙 GitHub Activity
       </h1>
       <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 24 }}>
-        {profile.github || "github.com/user"}
+        {profile.github}
       </p>
 
       <div
@@ -344,10 +398,10 @@ export function GitHubTab({ profile }) {
         }}
       >
         {[
-          { label: "Repositories", val: SKILLS_DATA.github.repos,   color: "var(--indigo)" },
-          { label: "Total Commits", val: SKILLS_DATA.github.commits, color: "var(--cyan)" },
-          { label: "Stars Earned",  val: SKILLS_DATA.github.stars,   color: "var(--amber)" },
-          { label: "Pull Requests", val: SKILLS_DATA.github.prs,     color: "var(--green)" },
+          { label: "Own Repos",          val: ownRepoCount,           color: "var(--indigo)" },
+          { label: "Contributed Repos",  val: collaboratedRepoCount,  color: "var(--green)" },
+          { label: "Total Commits",      val: totalCommits,           color: "var(--cyan)" },
+          { label: "Contributions (1y)", val: contributionsLastYear,  color: "var(--amber)" },
         ].map((m) => (
           <div key={m.label} className="metric-card">
             <div style={{ fontSize: "26px", fontWeight: 700, color: m.color }}>{m.val}</div>
@@ -359,60 +413,72 @@ export function GitHubTab({ profile }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div className="card" style={{ borderColor: "var(--border2)" }}>
           <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: 16 }}>Top Languages</h3>
-          {[
-            { lang: "Python",     pct: 42, color: "var(--indigo)" },
-            { lang: "JavaScript", pct: 28, color: "var(--amber)" },
-            { lang: "TypeScript", pct: 18, color: "var(--cyan)" },
-            { lang: "Go",         pct: 12, color: "var(--green)" },
-          ].map((l) => (
-            <div key={l.lang} style={{ marginBottom: 14 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "13px",
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ color: "var(--text2)" }}>{l.lang}</span>
-                <span style={{ color: l.color, fontWeight: 600 }}>{l.pct}%</span>
+          {languagePcts.length ? (
+            languagePcts.map((l, i) => (
+              <div key={l.lang} style={{ marginBottom: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                    marginBottom: 6,
+                  }}
+                >
+                  <span style={{ color: "var(--text2)" }}>{l.lang}</span>
+                  <span style={{ color: LANG_COLORS[i], fontWeight: 600 }}>{l.pct}%</span>
+                </div>
+                <MiniBar val={l.pct} max={100} color={LANG_COLORS[i]} />
               </div>
-              <MiniBar val={l.pct} max={100} color={l.color} />
-            </div>
-          ))}
+            ))
+          ) : (
+            <div style={{ fontSize: "12px", color: "var(--text3)" }}>No language data available</div>
+          )}
         </div>
 
         <div className="card" style={{ borderColor: "var(--border2)" }}>
           <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: 16 }}>
-            Contribution Insights
+            Top Repositories by Commits
           </h3>
-          <div style={{ padding: "12px", background: "var(--slate)", borderRadius: 8, marginBottom: 10 }}>
-            <div style={{ fontSize: "12px", color: "var(--text3)" }}>Current Streak</div>
-            <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--green)", marginTop: 2 }}>
-              {SKILLS_DATA.github.streak} 🔥 days
-            </div>
-          </div>
-          <div style={{ padding: "12px", background: "var(--slate)", borderRadius: 8, marginBottom: 10 }}>
-            <div style={{ fontSize: "12px", color: "var(--text3)" }}>Avg commits / week</div>
-            <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--cyan)", marginTop: 2 }}>
-              16.3
-            </div>
-          </div>
-          <div
-            style={{
-              padding: "12px",
-              background: "rgba(16,185,129,.08)",
-              borderRadius: 8,
-              border: "1px solid rgba(16,185,129,.2)",
-            }}
-          >
-            <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: 4 }}>
-              Strength detected
-            </div>
-            <div style={{ fontSize: "13px", color: "var(--green)" }}>
-              Consistent daily contribution habit
-            </div>
-          </div>
+          {topRepos.length ? (
+            topRepos.map((r) => (
+              <div key={`${r.owner}/${r.name}`} style={{ marginBottom: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                    marginBottom: 6,
+                  }}
+                >
+                  <span style={{ color: "var(--text2)" }}>
+                    {r.isOwn ? r.name : `${r.owner}/${r.name}`}
+                    {!r.isOwn && (
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          marginLeft: 6,
+                          padding: "1px 6px",
+                          borderRadius: 20,
+                          background: "rgba(16,185,129,.15)",
+                          color: "var(--green)",
+                        }}
+                      >
+                        contributor
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ color: "var(--cyan)", fontWeight: 600 }}>{r.commits}</span>
+                </div>
+                <MiniBar
+                  val={r.commits}
+                  max={topRepos[0].commits || 1}
+                  color="var(--cyan)"
+                />
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: "12px", color: "var(--text3)" }}>No repositories found</div>
+          )}
         </div>
       </div>
     </div>

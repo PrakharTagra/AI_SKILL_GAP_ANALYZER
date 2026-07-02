@@ -20,6 +20,10 @@ const leetcodeRoute = require("./routes/leetcodeRoute");
 app.use("/api/leetcode", leetcodeRoute);
 console.log("LeetCode route loaded:", typeof leetcodeRoute);
 
+const githubRoute = require("./routes/githubRoute");
+app.use("/api/github", githubRoute);
+console.log("GitHub route loaded:", typeof githubRoute);
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
