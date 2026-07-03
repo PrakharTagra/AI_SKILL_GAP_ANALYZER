@@ -128,7 +128,6 @@ export function OverviewTab({ profile, onTabChange, leetcodeStats, leetcodeError
           {[
             { label: "GitHub",   url: profile.github,      icon: "🐙", status: !!profile.github },
             { label: "LeetCode", url: profile.leetcode,    icon: "💻", status: !!profile.leetcode },
-            { label: "LinkedIn", url: profile.linkedin,    icon: "💼", status: !!profile.linkedin },
             { label: "Resume",   url: profile.resumeName,  icon: "📄", status: !!profile.resumeName },
           ].map((p) => (
             <div
@@ -480,64 +479,6 @@ export function GitHubTab({ profile, stats, error }) {
             <div style={{ fontSize: "12px", color: "var(--text3)" }}>No repositories found</div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-export function LinkedInTab({ profile }) {
-  return (
-    <div className="fadein">
-      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
-        💼 LinkedIn Insights
-      </h1>
-      <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 24 }}>
-        {profile.linkedin || "linkedin.com/in/user"}
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        {[
-          { label: "Connections",  val: SKILLS_DATA.linkedin.connections, color: "var(--cyan)" },
-          { label: "Profile Views",val: SKILLS_DATA.linkedin.views,       color: "var(--indigo)" },
-          { label: "Top Skill",    val: "Python",                          color: "var(--green)" },
-          { label: "Endorsements", val: "88",                              color: "var(--amber)" },
-        ].map((m) => (
-          <div key={m.label} className="metric-card">
-            <div style={{ fontSize: "22px", fontWeight: 700, color: m.color }}>{m.val}</div>
-            <div style={{ fontSize: "12px", color: "var(--text3)", marginTop: 4 }}>{m.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card" style={{ borderColor: "var(--border2)" }}>
-        <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: 16 }}>
-          Skill Endorsements
-        </h3>
-        {Object.entries(SKILLS_DATA.linkedin.endorsements).map(([skill, count]) => (
-          <div key={skill} style={{ marginBottom: 14 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "13px",
-                marginBottom: 6,
-              }}
-            >
-              <span style={{ color: "var(--text2)" }}>{skill}</span>
-              <span style={{ color: "var(--cyan)", fontWeight: 600 }}>
-                {count} endorsements
-              </span>
-            </div>
-            <MiniBar val={count} max={35} color="var(--cyan)" />
-          </div>
-        ))}
       </div>
     </div>
   );

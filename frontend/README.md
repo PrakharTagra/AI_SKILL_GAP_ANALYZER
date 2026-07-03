@@ -8,13 +8,12 @@ A React-based frontend for an AI-powered skill gap analyzer platform for student
 - **Profile Wizard** — 4-step onboarding:
   1. Personal info + resume upload (simulates AI parsing)
   2. Academic details
-  3. GitHub / LeetCode / LinkedIn links
+  3. GitHub / LeetCode links
   4. Skills & target role
-- **Dashboard** with 5 tabs:
+- **Dashboard** with 4 tabs:
   - Overview — metrics, skill bars, top gaps, linked profiles
   - LeetCode — problem distribution, rank, streak, weakness detection
   - GitHub — commits, repos, stars, language breakdown, contribution insights
-  - LinkedIn — connections, endorsements, profile views
   - Skill Gaps — animated ring charts with color-coded status & resource recommendations
 - **Edit profile** — accessible from sidebar, pre-fills existing data
 
@@ -51,7 +50,7 @@ src/
     AuthPage.jsx           # Login / signup screen
     ProfileWizard.jsx      # 4-step profile setup
     Dashboard.jsx          # Sidebar layout + tab switching
-    tabs.jsx               # Tab content: Overview, LeetCode, GitHub, LinkedIn, Gaps
+    tabs.jsx               # Tab content: Overview, LeetCode, GitHub, Gaps
     ui.jsx                 # Shared: Ring, MiniBar, MetricCard
 ```
 
@@ -63,5 +62,4 @@ Replace mock data in `src/data/mockData.js` with real API calls:
 |----------|------------------------------------------|
 | LeetCode | `https://leetcode.com/graphql`           |
 | GitHub   | `https://api.github.com/users/{username}`|
-| LinkedIn | LinkedIn Official API (OAuth required)   |
 | Resume   | OpenAI / Anthropic API for PDF parsing   |

@@ -3,7 +3,6 @@ import {
   OverviewTab,
   LeetCodeTab,
   GitHubTab,
-  LinkedInTab,
   SkillGapsTab,
 } from "./tabs.jsx";
 
@@ -11,7 +10,6 @@ const NAV = [
   { id: "overview", label: "Overview",    icon: "📊" },
   { id: "leetcode", label: "LeetCode",    icon: "💻" },
   { id: "github",   label: "GitHub",      icon: "🐙" },
-  { id: "linkedin", label: "LinkedIn",    icon: "💼" },
   { id: "gaps",     label: "Skill Gaps",  icon: "🎯" },
 ];
 
@@ -66,9 +64,6 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
         );
       }
 
-      // LinkedIn fetch slots in here once that service/route exists —
-      // push another task into the array above, same pattern.
-
       await Promise.all(tasks);
       if (!cancelled) setAnalyzing(false);
     }
@@ -103,7 +98,7 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
           Analyzing your profiles with AI...
         </p>
         <p style={{ color: "var(--text3)", fontSize: "12px" }}>
-          Pulling data from LeetCode, GitHub &amp; LinkedIn
+          Pulling data from LeetCode &amp; GitHub
         </p>
       </div>
     );
@@ -285,7 +280,6 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
             error={githubError}
           />
         )}
-        {activeTab === "linkedin" && <LinkedInTab  profile={profile} />}
         {activeTab === "gaps"     && <SkillGapsTab profile={profile} />}
       </div>
     </div>

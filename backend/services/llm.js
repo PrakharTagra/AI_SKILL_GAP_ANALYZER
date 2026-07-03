@@ -30,8 +30,7 @@ async function extractSkillsFromText(resumeText, extractedLinks = []) {
             "cgpa": "cgpa or percentage if mentioned",
             "skills": ["skill1", "skill2", "skill3"],
             "leetcode": "Leetcode profile URL from the extracted hyperlinks list, or empty string if not present",
-            "github": "Github profile URL from the extracted hyperlinks list, or empty string if not present",
-            "linkedin": "LinkedIn profile URL from the extracted hyperlinks list, or empty string if not present"
+            "github": "Github profile URL from the extracted hyperlinks list, or empty string if not present"
           }
 
           Extracted hyperlinks (ground truth for the URL fields above):

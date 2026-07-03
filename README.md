@@ -4,13 +4,13 @@ An AI-powered platform that helps students and professionals identify the gap be
 
 ## Overview
 
-AI Skill Gap Analyzer analyzes a user's profile from multiple sources, including **LinkedIn**, **GitHub**, **LeetCode**, and **Resume**, to build a comprehensive skill profile. It compares these skills with the requirements of various technology job roles and generates a personalized skill gap report.
+AI Skill Gap Analyzer analyzes a user's profile from multiple sources, including **GitHub**, **LeetCode**, and **Resume**, to build a comprehensive skill profile. It compares these skills with the requirements of various technology job roles and generates a personalized skill gap report.
 
 The platform then recommends learning resources, roadmaps, and projects to help users bridge these gaps while automatically tracking their progress over time.
 
 ## Features
 
-* Profile analysis from LinkedIn, GitHub, LeetCode, and Resume
+* Profile analysis from GitHub, LeetCode, and Resume
 * AI-powered skill extraction
 * Skill gap analysis for multiple tech job roles
 * Personalized learning roadmaps
@@ -58,7 +58,7 @@ ai-skill-gap-analyzer/
 
 ## Workflow
 
-1. Connect LinkedIn, GitHub, LeetCode, and upload Resume.
+1. Connect GitHub, LeetCode, and upload Resume.
 2. Extract and analyze user skills using AI.
 3. Match skills with selected job profiles.
 4. Identify missing and existing skills.

@@ -15,16 +15,6 @@ export const SKILLS_DATA = {
     languages: ["Python", "JavaScript", "TypeScript", "Go"],
     streak: 22,
   },
-  linkedin: {
-    connections: 312,
-    endorsements: {
-      "Machine Learning": 24,
-      Python: 31,
-      React: 18,
-      "Data Structures": 15,
-    },
-    views: 1240,
-  },
   skills: [
     { name: "Data Structures & Algorithms", score: 72 },
     { name: "System Design", score: 45 },

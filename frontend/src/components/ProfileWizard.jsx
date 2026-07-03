@@ -19,7 +19,6 @@ export default function ProfileWizard({
       cgpa: "",
       github: "",
       leetcode: "",
-      linkedin: "",
       skills: "",
       jobTarget: "",
       resumeName: "",
@@ -53,7 +52,6 @@ export default function ProfileWizard({
       if (data.cgpa)    up("cgpa", data.cgpa);
       if(data.leetcode) up("leetcode", data.leetcode);
       if(data.github) up("github", data.github);
-      if(data.linkedin) up("linkedin", data.linkedin);
       if (data.skills)  up("skills", Array.isArray(data.skills)
         ? data.skills.join(", ")
         : data.skills);
@@ -75,7 +73,7 @@ export default function ProfileWizard({
   const canNext = [
     form.name && form.college,
     form.degree && form.year,
-    form.github || form.leetcode || form.linkedin,
+    form.github || form.leetcode,
     form.skills && form.jobTarget,
   ][step];
 
@@ -326,14 +324,6 @@ export default function ProfileWizard({
                   value={form.leetcode}
                   onChange={(e) => up("leetcode", e.target.value)}
                   placeholder="leetcode.com/username"
-                />
-              </div>
-              <div>
-                <label className="label">💼 LinkedIn profile URL</label>
-                <input
-                  value={form.linkedin}
-                  onChange={(e) => up("linkedin", e.target.value)}
-                  placeholder="linkedin.com/in/yourname"
                 />
               </div>
             </div>
