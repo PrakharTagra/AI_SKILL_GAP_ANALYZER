@@ -24,6 +24,9 @@ const githubRoute = require("./routes/githubRoute");
 app.use("/api/github", githubRoute);
 console.log("GitHub route loaded:", typeof githubRoute);
 
+const analyzeRoute = require("./routes/analyze");
+app.use("/api", analyzeRoute);
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
