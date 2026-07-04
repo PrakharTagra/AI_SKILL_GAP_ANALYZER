@@ -349,17 +349,34 @@ export default function ProfileWizard({
                 >
                   <option value="">Select target role...</option>
                   {[
-                    "Software Engineer",
-                    "ML / AI Engineer",
-                    "Frontend Engineer",
-                    "Backend Engineer",
-                    "Data Scientist",
-                    "Full Stack Engineer",
-                    "DevOps Engineer",
-                    "Product Manager",
-                  ].map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
+  "AI Agent Developer",
+  "Prompt Engineer",
+  "LLM Engineer",
+  "Data Engineer (AI)",
+  "AI Product Manager",
+  "AI Security Engineer",
+  "Senior ML Engineer",
+  "NLP Engineer",
+  "AI Solutions Architect",
+  "ML Engineer",
+  "Generative AI Engineer",
+  "Deep Learning Engineer",
+  "Multimodal AI Engineer",
+  "MLOps Engineer",
+  "AI Business Analyst",
+  "RAG Engineer",
+  "Robotics Engineer (AI)",
+  "Senior Data Scientist",
+  "AI Ethics Officer",
+  "AI Infrastructure Eng",
+  "AI Engineer",
+  "Data Scientist",
+  "Computer Vision Engineer",
+  "AI Compliance Manager",
+  "AI Research Scientist",
+].map((r) => (
+  <option key={r}>{r}</option>
+))}
                 </select>
               </div>
             </div>
