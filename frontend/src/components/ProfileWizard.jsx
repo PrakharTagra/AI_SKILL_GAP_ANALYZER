@@ -62,12 +62,31 @@ export default function ProfileWizard({
       setUploading(false);
     }
   };
-  const submit = () => {
+ const submit = async () => {
     setSaving(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch("http://localhost:5000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skills: form.skills,
+          jobTarget: form.jobTarget,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Analysis failed");
+
+      const gapData = await res.json();
+      console.log("Gap analysis result:", gapData);
+
+      // Pass both form data and gap results to dashboard
+      onComplete({ ...form, gapAnalysis: gapData });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to analyze skills. Check the backend console.");
+    } finally {
       setSaving(false);
-      onComplete(form);
-    }, 1200);
+    }
   };
 
   const canNext = [
