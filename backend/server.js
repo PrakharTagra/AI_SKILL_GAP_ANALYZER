@@ -24,7 +24,7 @@ const githubRoute = require("./routes/githubRoute");
 app.use("/api/github", githubRoute);
 console.log("GitHub route loaded:", typeof githubRoute);
 
-const analyzeRoute = require("./routes/analyze");
+const analyzeRoute = require("./routes/analyse");
 app.use("/api", analyzeRoute);
 
 app.listen(PORT, () => {
