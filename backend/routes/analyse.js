@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { analyzeSkillGap } = require("../services/embeddings");
 const rolesSkills = require("../data/rolesSkills.json");
+const { runLearningPathAgent } = require("../services/agent");
 
 router.post("/analyze", async (req, res) => {
   const { skills, jobTarget } = req.body;
@@ -47,12 +48,20 @@ router.post("/analyze", async (req, res) => {
 
     const gapResult = await analyzeSkillGap(userSkills, requiredSkills);
 
-    res.json({
-      jobTarget,
-      userSkills,
-      requiredSkills,
-      ...gapResult,
-    });
+// Run the agent
+const learningPath = await runLearningPathAgent(
+  gapResult.missingSkills,
+  gapResult.partialSkills,
+  jobTarget
+);
+
+res.json({
+  jobTarget,
+  userSkills,
+  requiredSkills,
+  ...gapResult,
+  learningPath,
+});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
