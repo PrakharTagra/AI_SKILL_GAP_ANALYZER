@@ -3,73 +3,91 @@ const axios = require("axios");
 
 // Step 1 — Groq decides priority order of missing skills
 async function prioritizeSkills(missingSkills, partialSkills, targetRole) {
-  const response = await axios.post(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `You are a career coach AI. Return ONLY a JSON array, no extra text, no markdown.`,
-        },
-        {
-          role: "user",
-          content: `Target role: ${targetRole}
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: `You are a career coach AI. Return ONLY a JSON array, no extra text, no markdown.`,
+          },
+          {
+            role: "user",
+            content: `Target role: ${targetRole}
 Missing skills: ${missingSkills.map((s) => s.required).join(", ")}
 Partial skills: ${partialSkills.map((s) => `${s.required} (user has ${s.userHas})`).join(", ")}
 
 Return a JSON array of skills in the order the user should learn them (most foundational first).
 Each item should have: skill, reason, estimatedWeeks
 Example: [{"skill": "Statistics", "reason": "foundational for ML", "estimatedWeeks": 3}]`,
-        },
-      ],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
+          },
+        ],
       },
-    }
-  );
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  const content = response.data.choices[0].message.content;
-  const clean = content.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+    const content = response.data.choices[0].message.content;
+    const clean = content.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch (err) {
+    console.error(
+      "prioritizeSkills failed:",
+      err.response?.status || err.message,
+      err.response?.data || ""
+    );
+    throw err;
+  }
 }
 
 // Step 2 — Groq curates search results for each skill
 async function curateResources(skill, searchResults) {
-  const response = await axios.post(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `You are a learning resource curator. Return ONLY a JSON array, no extra text, no markdown.`,
-        },
-        {
-          role: "user",
-          content: `Skill to learn: ${skill}
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: `You are a learning resource curator. Return ONLY a JSON array, no extra text, no markdown.`,
+          },
+          {
+            role: "user",
+            content: `Skill to learn: ${skill}
 Search results:
 ${searchResults.map((r, i) => `${i + 1}. ${r.title} - ${r.url}\n${r.summary}`).join("\n\n")}
 
 Pick the best 2-3 resources and return as JSON array.
 Each item: {"title": "...", "url": "...", "type": "course/article/video/documentation", "why": "one line reason"}`,
-        },
-      ],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
+          },
+        ],
       },
-    }
-  );
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  const content = response.data.choices[0].message.content;
-  const clean = content.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+    const content = response.data.choices[0].message.content;
+    const clean = content.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch (err) {
+    console.error(
+      "curateResources failed:",
+      err.response?.status || err.message,
+      err.response?.data || ""
+    );
+    throw err;
+  }
 }
 
 // Main agent loop
@@ -111,6 +129,9 @@ async function runLearningPathAgent(missingSkills, partialSkills, targetRole) {
       resources,
       status: "not_started",
     });
+
+    // Pace out Groq calls to avoid rate-limit bursts
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   console.log("✅ Agent done! Learning path generated.");

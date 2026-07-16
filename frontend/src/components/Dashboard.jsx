@@ -23,35 +23,39 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
   const [leetcodeError, setLeetcodeError] = useState(null);
   const [githubStats, setGithubStats] = useState(null);
   const [githubError, setGithubError] = useState(null);
-  const [skillsData, setSkillsData] = useState(null);
-const [skillsError, setSkillsError] = useState(null);
+
+  // Reuse the gap analysis the wizard already computed on submit, if present —
+  // avoids a duplicate /api/skills/analyze call (and duplicate Groq usage) on every dashboard load.
+  const [skillsData, setSkillsData] = useState(profile.gapAnalysis || null);
+  const [skillsError, setSkillsError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadProfiles() {
       const tasks = [];
-      if (profile.skills && profile.jobTarget) {
-  tasks.push(
-    fetch(`${API_BASE}/api/skills/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ skills: profile.skills, jobTarget: profile.jobTarget }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to analyze skill gap");
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setSkillsData(data);
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) setSkillsError(err.message);
-      })
-  );
-}
 
+      // Only fetch skill-gap analysis if we don't already have it from the wizard
+      if (profile.skills && profile.jobTarget && !profile.gapAnalysis) {
+        tasks.push(
+          fetch(`${API_BASE}/api/skills/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skills: profile.skills, jobTarget: profile.jobTarget }),
+          })
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to analyze skill gap");
+              return res.json();
+            })
+            .then((data) => {
+              if (!cancelled) setSkillsData(data);
+            })
+            .catch((err) => {
+              console.error(err);
+              if (!cancelled) setSkillsError(err.message);
+            })
+        );
+      }
 
       if (profile.leetcode) {
         tasks.push(
@@ -95,7 +99,7 @@ const [skillsError, setSkillsError] = useState(null);
     return () => {
       cancelled = true;
     };
-  }, [profile.leetcode, profile.github]);
+  }, [profile.leetcode, profile.github, profile.skills, profile.jobTarget, profile.gapAnalysis]);
 
   if (analyzing) {
     return (
@@ -304,9 +308,8 @@ const [skillsError, setSkillsError] = useState(null);
           />
         )}
         {activeTab === "gaps" && (
-  <SkillGapsTab profile={profile} data={skillsData} error={skillsError} />
-)}
-       
+          <SkillGapsTab profile={profile} data={skillsData} error={skillsError} />
+        )}
       </div>
     </div>
   );

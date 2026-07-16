@@ -65,7 +65,7 @@ export default function ProfileWizard({
  const submit = async () => {
     setSaving(true);
     try {
-      const res = await fetch("http://localhost:5000/api/analyze", {
+      const res = await fetch("http://localhost:5000/api/skills/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
