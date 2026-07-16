@@ -1,4 +1,8 @@
 const axios = require("axios");
+require("dotenv").config();
+console.log("Token present:", !!process.env.GITHUB_TOKEN);
+console.log("Token length:", process.env.GITHUB_TOKEN?.length);
+console.log("Token starts with:", process.env.GITHUB_TOKEN?.slice(0, 4));
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour, per the doc's own caching recommendation
