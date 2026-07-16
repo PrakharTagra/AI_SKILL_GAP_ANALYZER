@@ -484,7 +484,59 @@ export function GitHubTab({ profile, stats, error }) {
   );
 }
 
-export function SkillGapsTab({ profile }) {
+export function SkillGapsTab({ profile, data, error }) {
+  if (!profile.jobTarget) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          🎯 Skill Gap Analysis
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px" }}>
+          Set a target role in your profile to see your skill gap analysis.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fadein">
+        <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
+          🎯 Skill Gap Analysis
+        </h1>
+        <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 16 }}>
+          {profile.jobTarget}
+        </p>
+        <div
+          style={{
+            padding: "12px",
+            background: "rgba(239,68,68,.08)",
+            borderRadius: 8,
+            border: "1px solid rgba(239,68,68,.2)",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "var(--red)" }}>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="fadein">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const { hasSkills = [], partialSkills = [], missingSkills = [], learningPath = [] } = data;
+
+  const allSkillRows = [
+    ...hasSkills.map((s) => ({ ...s, tier: "has" })),
+    ...partialSkills.map((s) => ({ ...s, tier: "partial" })),
+    ...missingSkills.map((s) => ({ ...s, tier: "missing" })),
+  ];
+
   return (
     <div className="fadein">
       <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 6 }}>
@@ -493,80 +545,164 @@ export function SkillGapsTab({ profile }) {
       <p style={{ color: "var(--text3)", fontSize: "13px", marginBottom: 24 }}>
         Based on your target role:{" "}
         <span style={{ color: "var(--indigo2)", fontWeight: 600 }}>
-          {profile.jobTarget || "Software Engineer"}
+          {profile.jobTarget}
         </span>
       </p>
 
-      <div style={{ marginBottom: 24 }}>
-        {SKILLS_DATA.skills.map((s, i) => (
-          <div key={s.name} className="card" style={{ borderColor: "var(--border2)", marginBottom: 12 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <div>
-                <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text1)" }}>
-                  {s.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    marginLeft: 10,
-                    padding: "2px 8px",
-                    borderRadius: 20,
-                    background:
-                      s.score >= 70
-                        ? "rgba(16,185,129,.15)"
-                        : s.score >= 50
-                        ? "rgba(245,158,11,.15)"
-                        : "rgba(239,68,68,.15)",
-                    color:
-                      s.score >= 70
-                        ? "var(--green)"
-                        : s.score >= 50
-                        ? "var(--amber)"
-                        : "var(--red)",
-                  }}
-                >
-                  {s.score >= 70 ? "Strong" : s.score >= 50 ? "Developing" : "Gap"}
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Ring percent={s.score} color={SKILL_COLORS[i]} size={48} stroke={4} />
-                <span style={{ fontSize: "18px", fontWeight: 700, color: SKILL_COLORS[i] }}>
-                  {s.score}%
-                </span>
-              </div>
-            </div>
-            <MiniBar val={s.score} max={100} color={SKILL_COLORS[i]} />
-            {s.score < 60 && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: "8px 12px",
-                  background: "var(--slate)",
-                  borderRadius: 6,
-                }}
-              >
-                <span style={{ fontSize: "12px", color: "var(--text3)" }}>💡 Recommended: </span>
-                <span style={{ fontSize: "12px", color: "var(--text2)" }}>
-                  {s.name === "System Design"
-                    ? "Study Grokking the System Design Interview"
-                    : s.name === "DevOps / Cloud"
-                    ? "Take AWS Cloud Practitioner certification"
-                    : s.name === "Database Design"
-                    ? "Complete CMU 15-445 course"
-                    : "Practice more problems"}
-                </span>
-              </div>
-            )}
+      {/* Summary counts */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3,1fr)",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        {[
+          { label: "Strong",     val: hasSkills.length,     color: "var(--green)" },
+          { label: "Developing", val: partialSkills.length, color: "var(--amber)" },
+          { label: "Gaps",       val: missingSkills.length, color: "var(--red)" },
+        ].map((m) => (
+          <div key={m.label} className="metric-card">
+            <div style={{ fontSize: "26px", fontWeight: 700, color: m.color }}>{m.val}</div>
+            <div style={{ fontSize: "12px", color: "var(--text3)", marginTop: 4 }}>{m.label}</div>
           </div>
         ))}
       </div>
+
+      {/* Per-skill breakdown */}
+      <div style={{ marginBottom: 24 }}>
+        {allSkillRows.map((s) => {
+          const color =
+            s.tier === "has" ? "var(--green)" : s.tier === "partial" ? "var(--amber)" : "var(--red)";
+          const label = s.tier === "has" ? "Strong" : s.tier === "partial" ? "Developing" : "Gap";
+
+          return (
+            <div
+              key={s.required}
+              className="card"
+              style={{ borderColor: "var(--border2)", marginBottom: 12 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text1)" }}>
+                    {s.required}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      marginLeft: 10,
+                      padding: "2px 8px",
+                      borderRadius: 20,
+                      background: `${color}26`,
+                      color,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Ring percent={s.similarity} color={color} size={48} stroke={4} />
+                  <span style={{ fontSize: "18px", fontWeight: 700, color }}>
+                    {s.similarity}%
+                  </span>
+                </div>
+              </div>
+              <MiniBar val={s.similarity} max={100} color={color} />
+              {s.note && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "8px 12px",
+                    background: "var(--slate)",
+                    borderRadius: 6,
+                  }}
+                >
+                  <span style={{ fontSize: "12px", color: "var(--text2)" }}>{s.note}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Learning path + curated resources (Tavily search results, Groq-curated) */}
+      {learningPath.length > 0 && (
+        <div>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text1)", marginBottom: 14 }}>
+            📚 Your Learning Path
+          </h3>
+          {learningPath.map((step, i) => (
+            <div
+              key={step.skill}
+              className="card"
+              style={{ borderColor: "var(--border2)", marginBottom: 12 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text1)" }}>
+                  {i + 1}. {step.skill}
+                </span>
+                <span style={{ fontSize: "11px", color: "var(--text3)" }}>
+                  ~{step.estimatedWeeks} {step.estimatedWeeks === 1 ? "week" : "weeks"}
+                </span>
+              </div>
+              <p style={{ fontSize: "12px", color: "var(--text3)", marginBottom: 10 }}>
+                {step.reason}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {step.resources?.map((r) => (
+                  <a
+                    key={r.url}
+                    href={r.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      background: "var(--slate)",
+                      borderRadius: 6,
+                      fontSize: "12px",
+                      color: "var(--text2)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <span>{r.title}</span>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        padding: "2px 8px",
+                        borderRadius: 20,
+                        background: "rgba(99,102,241,.15)",
+                        color: "var(--indigo)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {r.type}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

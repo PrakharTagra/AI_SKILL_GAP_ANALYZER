@@ -23,12 +23,35 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
   const [leetcodeError, setLeetcodeError] = useState(null);
   const [githubStats, setGithubStats] = useState(null);
   const [githubError, setGithubError] = useState(null);
+  const [skillsData, setSkillsData] = useState(null);
+const [skillsError, setSkillsError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadProfiles() {
       const tasks = [];
+      if (profile.skills && profile.jobTarget) {
+  tasks.push(
+    fetch(`${API_BASE}/api/skills/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skills: profile.skills, jobTarget: profile.jobTarget }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to analyze skill gap");
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setSkillsData(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) setSkillsError(err.message);
+      })
+  );
+}
+
 
       if (profile.leetcode) {
         tasks.push(
@@ -280,7 +303,10 @@ export default function Dashboard({ profile, onEditProfile, onLogout }) {
             error={githubError}
           />
         )}
-        {activeTab === "gaps"     && <SkillGapsTab profile={profile} />}
+        {activeTab === "gaps" && (
+  <SkillGapsTab profile={profile} data={skillsData} error={skillsError} />
+)}
+       
       </div>
     </div>
   );
